@@ -1,4 +1,4 @@
-const CAT_BREEDS = [
+export const CAT_BREEDS = [
     { id: 1, name: '橘猫', emoji: '🐱', personality: '黏人', preferredArea: 'hall', price: 200, rarity: '普通' },
     { id: 2, name: '狸花猫', emoji: '😺', personality: '活泼', preferredArea: 'hall', price: 250, rarity: '普通' },
     { id: 3, name: '三花猫', emoji: '😸', personality: '安静', preferredArea: 'window', price: 300, rarity: '普通' },
@@ -36,14 +36,14 @@ const CAT_BREEDS = [
     { id: 35, name: '褴褛猫', emoji: '🧶', personality: '黏人', preferredArea: 'hall', price: 2500, rarity: '珍贵' }
 ];
 
-const CAT_NAMES = [
+export const CAT_NAMES = [
     '小橘', '花花', '年糕', '麻薯', '汤圆', '豆沙', '粽子', '月饼', '寿司', '饭团',
     '布丁', '果冻', '奶茶', '咖啡', '可可', '摩卡', '拿铁', '卡布', '芝士', '奶油',
     '雪球', '棉花', '云朵', '毛毛', '绒绒', '暖暖', '阳阳', '月月', '星星', '点点',
     '豆豆', '果果', '糖糖', '蜜蜜', '甜甜', '香香', '臭臭', '胖胖', '瘦瘦', '高高'
 ];
 
-const CAT_PERSONALITIES = {
+export const CAT_PERSONALITIES = {
     '黏人': {
         description: '喜欢与人亲近，适合放在大厅',
         moodBonus: 'hall',
@@ -94,7 +94,7 @@ const CAT_PERSONALITIES = {
     }
 };
 
-const MENU_ITEMS = [
+export const MENU_ITEMS = [
     { id: 1, name: '美式咖啡', emoji: '☕', price: 28, cost: 8, unlockCost: 0, category: 'coffee' },
     { id: 2, name: '拿铁', emoji: '🥛', price: 35, cost: 12, unlockCost: 0, category: 'coffee' },
     { id: 3, name: '卡布奇诺', emoji: '☁️', price: 38, cost: 14, unlockCost: 100, category: 'coffee' },
@@ -109,7 +109,7 @@ const MENU_ITEMS = [
     { id: 12, name: '华夫饼', emoji: '🧇', price: 38, cost: 14, unlockCost: 160, category: 'dessert' }
 ];
 
-const CUSTOMER_TYPES = [
+export const CUSTOMER_TYPES = [
     { type: '学生', emoji: '👩‍🎓', patience: 30, tip: 1.0, rarity: 'common' },
     { type: '白领', emoji: '👨‍💼', patience: 20, tip: 1.2, rarity: 'common' },
     { type: '情侣', emoji: '💑', patience: 40, tip: 1.5, rarity: 'common' },
@@ -119,7 +119,7 @@ const CUSTOMER_TYPES = [
     { type: '网红', emoji: '🤳', patience: 25, tip: 2.0, rarity: 'rare' }
 ];
 
-const SHOP_ITEMS = {
+export const SHOP_ITEMS = {
     decor: [
         { id: 'd1', name: '豪华猫爬架', emoji: '🏔️', price: 1000, effect: '猫爬架容量+2' },
         { id: 'd2', name: '观景落地窗', emoji: '🪟', price: 1500, effect: '窗边容量+2' },
@@ -138,7 +138,7 @@ const SHOP_ITEMS = {
     ]
 };
 
-const CAT_STORIES = {
+export const CAT_STORIES = {
     1: {
         title: '小巷里的等待',
         content: '小橘曾经是一只在菜市场附近流浪的猫咪。每天它都守在同一个巷口，等待着那个曾经喂过它一次的小女孩。下雨天它会躲在纸箱里，饿了就翻找垃圾桶，但它从未离开那个巷口。直到有一天，你的出现，让它重新感受到了家的温暖。'
@@ -189,13 +189,13 @@ const CAT_STORIES = {
     }
 };
 
-const PERSONALITY_AREAS = {
+export const PERSONALITY_AREAS = {
     hall: ['黏人', '活泼'],
     shelf: ['高冷', '独立'],
     window: ['安静', '慵懒']
 };
 
-const CAT_INTERACTIONS = [
+export const CAT_INTERACTIONS = [
     { personality: '黏人', text: '{cat}蹭蹭了{customer}的手，客人好感大增！', bonus: 'tip' },
     { personality: '活泼', text: '{cat}表演了一个翻滚，{customer}给了更多小费！', bonus: 'tip' },
     { personality: '安静', text: '{cat}安静地陪伴{customer}，客人感到很放松', bonus: 'patience' },
@@ -204,7 +204,7 @@ const CAT_INTERACTIONS = [
     { personality: '独立', text: '{cat}聪明地引导{customer}找到座位，服务更高效了', bonus: 'speed' }
 ];
 
-const SERVE_CONFIG = {
+export const SERVE_CONFIG = {
     match: {
         earningMultiplier: 1,
         reputationChange: 2,
@@ -221,4 +221,4 @@ const SERVE_CONFIG = {
     }
 };
 
-const SAVE_KEY = 'cat_cafe_save';
+export const SAVE_KEY = 'cat_cafe_save';
