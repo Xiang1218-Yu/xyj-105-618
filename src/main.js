@@ -21,8 +21,8 @@ import { BonusPanelRenderer } from './ui/renderers/BonusPanelRenderer.js';
 
 class GameApp {
     constructor() {
-        this.store = new Store();
         this.eventBus = new EventBus();
+        this.store = new Store(this.eventBus);
 
         this.bonusSystem = new BonusSystem(this.store);
         this.saveSystem = new SaveSystem(this.store);

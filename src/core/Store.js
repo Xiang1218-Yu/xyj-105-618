@@ -23,11 +23,15 @@ const createInitialState = () => ({
     totalAngryLeft: 0
 });
 
-export class Store extends EventBus {
-    constructor() {
-        super();
+export class Store {
+    constructor(eventBus) {
+        this.bus = eventBus || new EventBus();
         this.state = createInitialState();
         this._pauseRendering = false;
+
+        this.on = this.bus.on.bind(this.bus);
+        this.once = this.bus.once.bind(this.bus);
+        this.off = this.bus.off.bind(this.bus);
 
         Object.assign(this,
             economySlice,
@@ -38,9 +42,13 @@ export class Store extends EventBus {
         );
     }
 
+    emit(event, data) {
+        this.bus.emit(event, data);
+    }
+
     reset() {
         this.state = createInitialState();
-        this.emit('state:reset');
+        this.bus.emit('state:reset');
     }
 
     hydrate(data) {
@@ -52,7 +60,7 @@ export class Store extends EventBus {
                 return realCat || null;
             });
         }
-        this.emit('state:hydrated');
+        this.bus.emit('state:hydrated');
     }
 
     snapshot() {
@@ -102,14 +110,14 @@ export class Store extends EventBus {
             fn();
         } finally {
             this._pauseRendering = false;
-            this.emit('state:changed');
+            this.bus.emit('state:changed');
         }
     }
 
     _emit(event, data) {
         if (!this._pauseRendering) {
-            this.emit(event, data);
-            this.emit('state:changed', { event, data });
+            this.bus.emit(event, data);
+            this.bus.emit('state:changed', { event, data });
         }
     }
 }
