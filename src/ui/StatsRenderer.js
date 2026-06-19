@@ -1,18 +1,21 @@
+import { EVENTS } from '../data/constants.js';
+
 export class StatsRenderer {
-    constructor(state, bus) {
-        this.state = state;
-        this.bus = bus;
+    constructor(store, bus, scheduler) {
+        this.store = store;
+        this.scheduler = scheduler;
         this.coinsEl = document.getElementById('coins');
         this.repEl = document.getElementById('reputation');
         this.catCountEl = document.getElementById('cat-count');
 
-        this.bus.on('state:stats', () => this.render());
-        this.render();
+        bus.on(EVENTS.STATS_CHANGED, () => this.scheduler.invalidate(this));
+        this.scheduler.invalidate(this);
     }
 
     render() {
-        this.coinsEl.textContent = this.state.coins;
-        this.repEl.textContent = this.state.reputation;
-        this.catCountEl.textContent = this.state.cats.length;
+        const s = this.store.getState();
+        this.coinsEl.textContent = s.coins;
+        this.repEl.textContent = s.reputation;
+        this.catCountEl.textContent = s.cats.length;
     }
 }

@@ -1,24 +1,25 @@
 import { CAT_STORIES, EVENTS } from '../data/constants.js';
 
 export class StoryRenderer {
-    constructor(state, bus, modal) {
-        this.state = state;
-        this.bus = bus;
+    constructor(store, bus, scheduler, modal) {
+        this.store = store;
+        this.scheduler = scheduler;
         this.modal = modal;
         this.container = document.getElementById('story-list');
 
-        this.bus.on(EVENTS.CATS_CHANGED, () => {
+        bus.on(EVENTS.CATS_CHANGED, () => {
             if (document.getElementById('story-tab').classList.contains('active')) {
-                this.render();
+                this.scheduler.invalidate(this);
             }
         });
-        this.bus.on(EVENTS.STORIES_CHANGED, () => this.render());
+        bus.on(EVENTS.STORIES_CHANGED, () => this.scheduler.invalidate(this));
     }
 
     render() {
+        const state = this.store.getState();
         this.container.innerHTML = '';
 
-        this.state.cats.forEach(cat => {
+        state.cats.forEach(cat => {
             const story = CAT_STORIES[cat.breedId];
             const unlocked = cat.bond >= 100;
             if (story) {
@@ -38,7 +39,9 @@ export class StoryRenderer {
                     </div>
                 `;
                 if (unlocked) {
-                    item.addEventListener('click', () => this.modal.showStory(cat, story));
+                    const capturedCat = cat;
+                    const capturedStory = story;
+                    item.addEventListener('click', () => this.modal.showStory(capturedCat, capturedStory));
                 }
                 this.container.appendChild(item);
             }

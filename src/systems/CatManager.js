@@ -1,46 +1,17 @@
 import { CAT_BREEDS, CAT_NAMES, CAT_PERSONALITIES, PERSONALITY_AREAS, EVENTS } from '../data/constants.js';
+import { getCatMood } from '../logic/catUtils.js';
 
 export class CatManager {
-    constructor(state, bus) {
-        this.state = state;
+    constructor(store, bus) {
+        this.store = store;
         this.bus = bus;
         this._moodAccumSec = 0;
         this._moodIntervalSec = 15;
     }
 
-    getCatMood(cat, area) {
-        const personality = CAT_PERSONALITIES[cat.personality];
-        if (!personality) return 70;
-        if (personality.moodBonus === area) return 90;
-        if (personality.moodPenalty === area) return 40;
-        return 70;
-    }
-
-    calculateCafeBonuses() {
-        const totals = { attract: 0, tip: 0, patience: 0, rare: 0 };
-        for (const [area, cats] of Object.entries(this.state.areaAssignments)) {
-            cats.forEach(cat => {
-                if (!cat) return;
-                const realCat = this.state.findCatById(cat.id) || cat;
-                const personality = CAT_PERSONALITIES[realCat.personality];
-                if (!personality) return;
-                const mood = this.getCatMood(realCat, area);
-                if (mood >= 70) {
-                    const bonus = personality.cafeBonus;
-                    if (!bonus) return;
-                    for (const key of Object.keys(totals)) {
-                        if (typeof bonus[key] === 'number') {
-                            totals[key] += bonus[key];
-                        }
-                    }
-                }
-            });
-        }
-        return totals;
-    }
-
     createCatFromBreed(breed) {
-        const usedNames = this.state.cats.map(c => c.name);
+        const state = this.store.getState();
+        const usedNames = state.cats.map(c => c.name);
         const availableNames = CAT_NAMES.filter(n => !usedNames.includes(n));
         const name = availableNames[Math.floor(Math.random() * availableNames.length)] || breed.name;
 
@@ -58,19 +29,19 @@ export class CatManager {
     }
 
     adoptCat(breed, free = false) {
-        if (!free && !this.state.spendCoins(breed.price)) {
+        if (!free && !this.store.spendCoins(breed.price)) {
             this.bus.emit(EVENTS.NOTIFICATION, { message: '金币不足！', type: 'error' });
             return null;
         }
         const cat = this.createCatFromBreed(breed);
-        this.state.addCat(cat);
+        this.store.addCat(cat);
         this.bus.emit(EVENTS.NOTIFICATION, { message: `成功收养了 ${cat.name}！`, type: 'success' });
         this.bus.emit(EVENTS.SAVE);
         return cat;
     }
 
     petCat(cat) {
-        this.state.updateCat(cat.id, (c) => {
+        this.store.updateCat(cat.id, (c) => {
             c.bond = Math.min(100, c.bond + 1);
             c.mood = Math.min(100, c.mood + 5);
         });
@@ -80,9 +51,9 @@ export class CatManager {
     }
 
     assignCatToArea(cat, area, index) {
-        this.state.removeCatFromArea(cat);
-        this.state.assignCatToArea(cat, area, index);
-        this.state.updateCat(cat.id, (c) => {
+        this.store.removeCatFromArea(cat);
+        this.store.assignCatToArea(cat, area, index);
+        this.store.updateCat(cat.id, (c) => {
             c.bond = Math.min(100, c.bond + 2);
         });
         this.checkStoryUnlock(cat);
@@ -96,19 +67,19 @@ export class CatManager {
     }
 
     removeCatFromArea(cat) {
-        this.state.removeCatFromArea(cat);
+        this.store.removeCatFromArea(cat);
         this.bus.emit(EVENTS.SAVE);
     }
 
     applyFoodToCat(cat, food) {
-        if (!this.state.spendCoins(food.price)) {
+        if (!this.store.spendCoins(food.price)) {
             this.bus.emit(EVENTS.NOTIFICATION, { message: '金币不足！', type: 'error' });
             return;
         }
         const bondMatch = food.effect.match(/好感度\+(\d+)/);
         const moodMatch = food.effect.match(/心情恢复\+(\d+)/);
 
-        this.state.updateCat(cat.id, (c) => {
+        this.store.updateCat(cat.id, (c) => {
             if (bondMatch) c.bond = Math.min(100, c.bond + parseInt(bondMatch[1]));
             if (moodMatch) c.mood = Math.min(100, c.mood + parseInt(moodMatch[1]));
         });
@@ -119,10 +90,10 @@ export class CatManager {
     }
 
     checkStoryUnlock(cat) {
-        const freshCat = this.state.findCatById(cat.id);
+        const freshCat = this.store.findCatById(cat.id);
         if (!freshCat) return;
-        if (freshCat.bond >= 100 && !this.state.unlockedStories.includes(freshCat.breedId)) {
-            this.state.unlockStory(freshCat.breedId);
+        if (freshCat.bond >= 100) {
+            this.store.unlockStory(freshCat.breedId);
             this.bus.emit(EVENTS.NOTIFICATION, { message: `${freshCat.name} 的故事已解锁！`, type: 'success' });
         }
     }
@@ -137,12 +108,13 @@ export class CatManager {
     }
 
     _updateMoods() {
-        for (const [area, cats] of Object.entries(this.state.areaAssignments)) {
+        const state = this.store.getState();
+        for (const [area, cats] of Object.entries(state.areaAssignments)) {
             cats.forEach(cat => {
                 if (!cat) return;
-                const realCat = this.state.findCatById(cat.id) || cat;
-                const mood = this.getCatMood(realCat, area);
-                this.state.updateCat(realCat.id, (c) => {
+                const realCat = state.cats.find(c => c.id === cat.id) || cat;
+                const mood = getCatMood(realCat, area);
+                this.store.updateCat(realCat.id, (c) => {
                     if (mood < 50) {
                         c.mood = Math.max(0, c.mood - 5);
                     } else {

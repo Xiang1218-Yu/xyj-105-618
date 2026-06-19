@@ -1,18 +1,19 @@
 import { EVENTS } from '../data/constants.js';
 
 export class LogRenderer {
-    constructor(state, bus) {
-        this.state = state;
-        this.bus = bus;
+    constructor(store, bus, scheduler) {
+        this.store = store;
+        this.scheduler = scheduler;
         this.container = document.getElementById('log-content');
 
-        this.bus.on(EVENTS.LOG_ADDED, () => this.render());
-        this.render();
+        bus.on(EVENTS.LOG_ADDED, () => this.scheduler.invalidate(this));
+        this.scheduler.invalidate(this);
     }
 
     render() {
+        const state = this.store.getState();
         this.container.innerHTML = '';
-        const recent = this.state.interactionLogs.slice(-8);
+        const recent = state.interactionLogs.slice(-8);
         if (recent.length === 0) {
             this.container.innerHTML = '<div class="log-entry" style="color:#999;">暂无互动记录</div>';
             return;

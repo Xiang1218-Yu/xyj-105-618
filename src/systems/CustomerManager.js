@@ -1,22 +1,23 @@
 import { CUSTOMER_TYPES, EVENTS } from '../data/constants.js';
+import { calculateCafeBonuses } from '../logic/catUtils.js';
 
 export class CustomerManager {
-    constructor(state, bus, catManager) {
-        this.state = state;
+    constructor(store, bus) {
+        this.store = store;
         this.bus = bus;
-        this.catManager = catManager;
         this._spawnAccumSec = 0;
         this._spawnIntervalSec = 8;
         this._customerTickAccum = 0;
     }
 
     spawnCustomer() {
-        if (this.state.customers.length >= 5) return;
+        const state = this.store.getState();
+        if (state.customers.length >= 5) return;
 
-        const unlocked = this.state.getUnlockedMenu();
+        const unlocked = this.store.getUnlockedMenu();
         if (unlocked.length === 0) return;
 
-        const bonuses = this.catManager.calculateCafeBonuses();
+        const bonuses = calculateCafeBonuses(state);
 
         let pool;
         if (bonuses.rare > 0 && Math.random() * 100 < bonuses.rare) {
@@ -42,7 +43,7 @@ export class CustomerManager {
             maxWait
         };
 
-        this.state.addCustomer(customer);
+        this.store.addCustomer(customer);
     }
 
     tick(deltaSec) {
@@ -53,8 +54,8 @@ export class CustomerManager {
             this._tickCustomersOneSecond();
             secondsElapsed++;
         }
-        if (secondsElapsed > 0 && this.state.customers.length > 0) {
-            this.bus.emit(EVENTS.CUSTOMERS_CHANGED, { customers: this.state.customers });
+        if (secondsElapsed > 0 && this.store.getState().customers.length > 0) {
+            this.bus.emit(EVENTS.CUSTOMERS_CHANGED, { customers: this.store.getState().customers });
         }
 
         this._spawnAccumSec += deltaSec;
@@ -65,8 +66,9 @@ export class CustomerManager {
     }
 
     _tickCustomersOneSecond() {
+        const state = this.store.getState();
         const angryCustomers = [];
-        for (const customer of this.state.customers) {
+        for (const customer of state.customers) {
             customer.waitTime += 1;
             if (customer.waitTime >= customer.maxWait) {
                 angryCustomers.push(customer);
@@ -75,10 +77,10 @@ export class CustomerManager {
 
         if (angryCustomers.length > 0) {
             for (const c of angryCustomers) {
-                this.state.removeCustomer(c.id, 'angry');
+                this.store.removeCustomer(c.id, 'angry');
             }
-            this.state.recordAngryLeft(angryCustomers.length);
-            this.state.addReputation(-angryCustomers.length * 5);
+            this.store.recordAngryLeft(angryCustomers.length);
+            this.store.addReputation(-angryCustomers.length * 5);
             this.bus.emit(EVENTS.NOTIFICATION, {
                 message: `${angryCustomers.length} 位客人等不及离开了...`,
                 type: 'error'

@@ -1,10 +1,10 @@
-import { AREAS, PERSONALITY_AREAS, EVENTS } from '../data/constants.js';
+import { AREAS, EVENTS } from '../data/constants.js';
+import { getCatMood } from '../logic/catUtils.js';
 
 export class AreasRenderer {
-    constructor(state, bus, catManager, modal) {
-        this.state = state;
-        this.bus = bus;
-        this.catManager = catManager;
+    constructor(store, bus, scheduler, modal) {
+        this.store = store;
+        this.scheduler = scheduler;
         this.modal = modal;
         this.containers = {
             hall: document.getElementById('hall-cats'),
@@ -12,31 +12,33 @@ export class AreasRenderer {
             window: document.getElementById('window-cats')
         };
 
-        this.bus.on(EVENTS.AREAS_CHANGED, () => this.render());
-        this.bus.on(EVENTS.CATS_CHANGED, () => this.render());
-        this.render();
+        const refresh = () => this.scheduler.invalidate(this);
+        bus.on(EVENTS.AREAS_CHANGED, refresh);
+        bus.on(EVENTS.CATS_CHANGED, refresh);
+        this.scheduler.invalidate(this);
     }
 
     render() {
-        AREAS.forEach(area => this.renderArea(area));
+        const state = this.store.getState();
+        AREAS.forEach(area => this.renderArea(area, state));
     }
 
-    renderArea(area) {
+    renderArea(area, state) {
         const container = this.containers[area];
         container.innerHTML = '';
-        for (let i = 0; i < this.state.areaCapacities[area]; i++) {
+        for (let i = 0; i < state.areaCapacities[area]; i++) {
             const slot = document.createElement('div');
             slot.className = 'cat-slot';
             slot.dataset.area = area;
             slot.dataset.index = i;
 
-            const assignedCat = this.state.areaAssignments[area][i];
+            const assignedCat = state.areaAssignments[area][i];
             if (assignedCat) {
-                const cat = this.state.findCatById(assignedCat.id) || assignedCat;
+                const cat = state.cats.find(c => c.id === assignedCat.id) || assignedCat;
                 slot.classList.add('occupied');
                 slot.textContent = cat.emoji;
 
-                const mood = this.catManager.getCatMood(cat, area);
+                const mood = getCatMood(cat, area);
                 if (mood < 50) {
                     const indicator = document.createElement('span');
                     indicator.className = 'unhappy-indicator';
@@ -48,7 +50,8 @@ export class AreasRenderer {
                     moodEmoji.textContent = mood >= 80 ? '😻' : '😺';
                     slot.appendChild(moodEmoji);
                 }
-                slot.addEventListener('click', () => this.modal.showCatDetail(cat));
+                const capturedCat = cat;
+                slot.addEventListener('click', () => this.modal.showCatDetail(capturedCat));
             } else {
                 slot.addEventListener('click', () => this.modal.openAssignCatModal(area, i));
             }

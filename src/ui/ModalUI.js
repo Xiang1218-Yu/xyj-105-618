@@ -1,18 +1,21 @@
 import { PERSONALITY_AREAS, AREA_NAMES, CAT_STORIES, CAT_PERSONALITIES, EVENTS } from '../data/constants.js';
 
 export class ModalUI {
-    constructor(state, bus, catManager, cafeSystem) {
-        this.state = state;
+    constructor(store, bus) {
+        this.store = store;
         this.bus = bus;
-        this.catManager = catManager;
-        this.cafeSystem = cafeSystem;
         this.modal = document.getElementById('modal');
         this.body = document.getElementById('modal-body');
+        this._handlers = {};
 
         document.querySelector('.close-btn').addEventListener('click', () => this.close());
         this.modal.addEventListener('click', (e) => {
             if (e.target.id === 'modal') this.close();
         });
+    }
+
+    setHandlers(handlers) {
+        this._handlers = { ...this._handlers, ...handlers };
     }
 
     open() {
@@ -68,7 +71,7 @@ export class ModalUI {
         `;
 
         const refreshDetail = () => {
-            const fresh = this.state.findCatById(cat.id);
+            const fresh = this.store.findCatById(cat.id);
             if (!fresh) return;
             const bv = document.getElementById('detail-bond-value');
             const bf = document.getElementById('detail-bond-fill');
@@ -81,14 +84,13 @@ export class ModalUI {
         };
 
         this.body.querySelector('#pet-btn').addEventListener('click', () => {
-            this.catManager.petCat(cat);
+            if (this._handlers.onPet) this._handlers.onPet(cat);
             refreshDetail();
         });
 
         this.body.querySelector('#move-btn').addEventListener('click', () => {
-            this.catManager.removeCatFromArea(cat);
+            if (this._handlers.onMoveCat) this._handlers.onMoveCat(cat);
             this.close();
-            this.bus.emit(EVENTS.NOTIFICATION, { message: `请选择新的位置放置 ${cat.name}`, type: 'info' });
         });
 
         if (hasStory && storyUnlocked) {
@@ -101,7 +103,7 @@ export class ModalUI {
     }
 
     openAssignCatModal(area, index) {
-        const availableCats = this.state.getAvailableCats();
+        const availableCats = this.store.getAvailableCats();
 
         if (availableCats.length === 0) {
             this.bus.emit(EVENTS.NOTIFICATION, { message: '没有可用的猫咪', type: 'info' });
@@ -128,9 +130,9 @@ export class ModalUI {
 
         this.body.querySelectorAll('.cat-card').forEach(card => {
             card.addEventListener('click', () => {
-                const c = this.state.findCatById(parseInt(card.dataset.catId));
-                if (c) {
-                    this.catManager.assignCatToArea(c, area, index);
+                const c = this.store.findCatById(parseInt(card.dataset.catId));
+                if (c && this._handlers.onAssignCat) {
+                    this._handlers.onAssignCat(c, area, index);
                     this.close();
                 }
             });
@@ -140,10 +142,11 @@ export class ModalUI {
     }
 
     openSelectCatModal(food) {
+        const state = this.store.getState();
         this.body.innerHTML = `
             <h2 style="text-align:center;margin-bottom:20px;color:#8B4513;">选择猫咪使用 ${food.name}</h2>
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:15px;">
-                ${this.state.cats.map(c => `
+                ${state.cats.map(c => `
                     <div class="cat-card" style="cursor:pointer;" data-cat-id="${c.id}">
                         <span class="cat-emoji">${c.emoji}</span>
                         <div class="cat-name">${c.name}</div>
@@ -155,9 +158,9 @@ export class ModalUI {
 
         this.body.querySelectorAll('.cat-card').forEach(card => {
             card.addEventListener('click', () => {
-                const c = this.state.findCatById(parseInt(card.dataset.catId));
-                if (c) {
-                    this.catManager.applyFoodToCat(c, food);
+                const c = this.store.findCatById(parseInt(card.dataset.catId));
+                if (c && this._handlers.onUseFood) {
+                    this._handlers.onUseFood(c, food);
                     this.close();
                 }
             });
@@ -167,7 +170,7 @@ export class ModalUI {
     }
 
     openServeModal(customer) {
-        const unlocked = this.state.getUnlockedMenu();
+        const unlocked = this.store.getUnlockedMenu();
 
         this.body.innerHTML = `
             <div class="serve-select-modal">
@@ -197,9 +200,9 @@ export class ModalUI {
             el.addEventListener('click', () => {
                 const menuId = parseInt(el.dataset.menuId);
                 const selectedItem = unlocked.find(m => m.id === menuId);
-                if (selectedItem) {
-                    const result = this.cafeSystem.serveCustomer(customer, selectedItem);
-                    this.renderServeResult(result);
+                if (selectedItem && this._handlers.onServe) {
+                    const result = this._handlers.onServe(customer, selectedItem);
+                    if (result) this.renderServeResult(result);
                 }
             });
         });
@@ -208,7 +211,7 @@ export class ModalUI {
     }
 
     renderServeResult(result) {
-        const { finalEarning, baseEarning, tipMultiplier, menuItem, catInteraction, config, isMatch } = result;
+        const { finalEarning, baseEarning, tipMultiplier, menuItem, catInteraction, config, isMatch, customer } = result;
 
         if (catInteraction) {
             const ia = document.getElementById('serve-interaction-area');
@@ -229,7 +232,7 @@ export class ModalUI {
                     <div>${config.message}</div>
                     <div class="earn">💰 ${finalEarning >= 0 ? '+' : ''}${finalEarning}</div>
                     <div style="font-size:11px;color:#999;margin-top:4px;">
-                        ${isMatch ? '✓ 正确匹配' : '✗ 点错了！客人想要 ' + result.customer.order.emoji + ' ' + result.customer.order.name}
+                        ${isMatch ? '✓ 正确匹配' : '✗ 点错了！客人想要 ' + customer.order.emoji + ' ' + customer.order.name}
                     </div>
                     <div style="font-size:10px;color:#999;margin-top:2px;">
                         基础${baseEarning} × 小费x${tipMultiplier.toFixed(1)} × ${isMatch ? '匹配x1.0' : '错单x' + config.earningMultiplier}

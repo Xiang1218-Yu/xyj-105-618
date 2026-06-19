@@ -1,18 +1,18 @@
 import { SERVE_CONFIG, CAT_PERSONALITIES, EVENTS } from '../data/constants.js';
+import { calculateCafeBonuses } from '../logic/catUtils.js';
 
 export class CafeSystem {
-    constructor(state, bus, catManager) {
-        this.state = state;
+    constructor(store, bus) {
+        this.store = store;
         this.bus = bus;
-        this.catManager = catManager;
     }
 
-    getActiveCats() {
+    _getActiveCats(state) {
         const active = [];
-        for (const cats of Object.values(this.state.areaAssignments)) {
+        for (const cats of Object.values(state.areaAssignments)) {
             cats.forEach(catRef => {
                 if (catRef) {
-                    const realCat = this.state.findCatById(catRef.id) || catRef;
+                    const realCat = state.cats.find(c => c.id === catRef.id) || catRef;
                     if (realCat) active.push(realCat);
                 }
             });
@@ -21,14 +21,15 @@ export class CafeSystem {
     }
 
     serveCustomer(customer, menuItem) {
-        const bonuses = this.catManager.calculateCafeBonuses();
+        const state = this.store.getState();
+        const bonuses = calculateCafeBonuses(state);
         const tipBonus = 1 + bonuses.tip / 100;
         const isMatch = customer.order && customer.order.id === menuItem.id;
         const config = isMatch ? SERVE_CONFIG.match : SERVE_CONFIG.mismatch;
 
         let catInteraction = null;
         let interactingCat = null;
-        const activeCats = this.getActiveCats();
+        const activeCats = this._getActiveCats(state);
 
         if (activeCats.length > 0 && Math.random() < 0.6) {
             interactingCat = activeCats[Math.floor(Math.random() * activeCats.length)];
@@ -54,35 +55,22 @@ export class CafeSystem {
 
         if (catInteraction && interactingCat) {
             finalEarning = Math.floor(finalEarning * 1.15);
-            this.state.updateCat(interactingCat.id, (c) => {
+            this.store.updateCat(interactingCat.id, (c) => {
                 c.bond = Math.min(100, c.bond + 1);
             });
-            this.catManager.checkStoryUnlock(interactingCat);
-            this.state.addLog(
+            this.store.addLog(
                 `<span class="log-cat">${interactingCat.emoji} ${interactingCat.name}</span> ${catInteraction.text} <span class="log-bonus">收入+15%</span>`
             );
         }
 
-        this.state.addCoins(finalEarning);
-        this.state.addReputation(config.reputationChange);
+        this.store.addCoins(finalEarning);
+        this.store.addReputation(config.reputationChange);
 
         if (config.countAsServed) {
-            this.state.recordServed(finalEarning);
+            this.store.recordServed(finalEarning);
         }
 
-        this.state.removeCustomer(customer.id);
-
-        const result = {
-            isMatch,
-            finalEarning,
-            baseEarning,
-            tipMultiplier,
-            menuItem,
-            customer,
-            catInteraction,
-            config,
-            reputationChange: config.reputationChange
-        };
+        this.store.removeCustomer(customer.id);
 
         setTimeout(() => {
             const notifType = isMatch ? 'success' : 'error';
@@ -93,6 +81,17 @@ export class CafeSystem {
         }, 1800);
 
         this.bus.emit(EVENTS.SAVE);
-        return result;
+
+        return {
+            isMatch,
+            finalEarning,
+            baseEarning,
+            tipMultiplier,
+            menuItem,
+            customer,
+            catInteraction,
+            config,
+            reputationChange: config.reputationChange
+        };
     }
 }

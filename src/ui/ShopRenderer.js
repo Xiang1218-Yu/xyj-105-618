@@ -1,24 +1,30 @@
 import { CAT_BREEDS, SHOP_ITEMS, EVENTS } from '../data/constants.js';
 
 export class ShopRenderer {
-    constructor(state, bus, catManager, shopSystem, modal) {
-        this.state = state;
-        this.bus = bus;
-        this.catManager = catManager;
-        this.shopSystem = shopSystem;
+    constructor(store, bus, scheduler, modal) {
+        this.store = store;
+        this.scheduler = scheduler;
         this.modal = modal;
         this.container = document.getElementById('shop-content');
         this.currentTab = 'cats';
+        this._onAdopt = null;
+        this._onBuyDecor = null;
+        this._onRequestFood = null;
 
         document.querySelectorAll('.shop-tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => this.switchTab(e.target.dataset.shop));
         });
 
-        this.bus.on(EVENTS.COINS_CHANGED, () => this.render());
-        this.bus.on(EVENTS.CATS_CHANGED, () => { if (this.currentTab === 'cats') this.render(); });
-        this.bus.on(EVENTS.SHOP_CHANGED, () => { if (this.currentTab === 'decor') this.render(); });
+        bus.on(EVENTS.COINS_CHANGED, () => this.scheduler.invalidate(this));
+        bus.on(EVENTS.CATS_CHANGED, () => { if (this.currentTab === 'cats') this.scheduler.invalidate(this); });
+        bus.on(EVENTS.SHOP_CHANGED, () => { if (this.currentTab === 'decor') this.scheduler.invalidate(this); });
+        this.scheduler.invalidate(this);
+    }
 
-        this.render();
+    setHandlers({ onAdopt, onBuyDecor, onRequestFood }) {
+        this._onAdopt = onAdopt;
+        this._onBuyDecor = onBuyDecor;
+        this._onRequestFood = onRequestFood;
     }
 
     switchTab(tabName) {
@@ -26,23 +32,24 @@ export class ShopRenderer {
         document.querySelectorAll('.shop-tab-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.shop === tabName);
         });
-        this.render();
+        this.scheduler.invalidate(this);
     }
 
     render() {
+        const state = this.store.getState();
         this.container.innerHTML = '';
         if (this.currentTab === 'cats') {
-            this.renderCats();
+            this.renderCats(state);
         } else if (this.currentTab === 'decor') {
-            this.renderDecor();
+            this.renderDecor(state);
         } else if (this.currentTab === 'food') {
-            this.renderFood();
+            this.renderFood(state);
         }
     }
 
-    renderCats() {
+    renderCats(state) {
         CAT_BREEDS.forEach(breed => {
-            const owned = this.state.cats.some(c => c.breedId === breed.id);
+            const owned = state.cats.some(c => c.breedId === breed.id);
             const item = document.createElement('div');
             item.className = 'shop-item';
             if (owned) item.style.opacity = '0.5';
@@ -51,20 +58,19 @@ export class ShopRenderer {
                 <div class="shop-item-name">${breed.name}</div>
                 <div class="shop-item-desc">${breed.personality} · ${breed.rarity}</div>
                 <div class="shop-item-price">💰 ${breed.price}</div>
-                <button class="buy-btn" ${owned || this.state.coins < breed.price ? 'disabled' : ''}>${owned ? '已拥有' : '收养'}</button>
+                <button class="buy-btn" ${owned || state.coins < breed.price ? 'disabled' : ''}>${owned ? '已拥有' : '收养'}</button>
             `;
-            if (!owned) {
-                item.querySelector('.buy-btn').addEventListener('click', () => {
-                    this.catManager.adoptCat(breed);
-                });
+            if (!owned && this._onAdopt) {
+                const capturedBreed = breed;
+                item.querySelector('.buy-btn').addEventListener('click', () => this._onAdopt(capturedBreed));
             }
             this.container.appendChild(item);
         });
     }
 
-    renderDecor() {
+    renderDecor(state) {
         SHOP_ITEMS.decor.forEach(decor => {
-            const owned = this.state.purchasedDecor.includes(decor.id);
+            const owned = state.purchasedDecor.includes(decor.id);
             const item = document.createElement('div');
             item.className = 'shop-item';
             if (owned) item.style.opacity = '0.5';
@@ -73,18 +79,17 @@ export class ShopRenderer {
                 <div class="shop-item-name">${decor.name}</div>
                 <div class="shop-item-desc">${decor.effect}</div>
                 <div class="shop-item-price">💰 ${decor.price}</div>
-                <button class="buy-btn" ${owned || this.state.coins < decor.price ? 'disabled' : ''}>${owned ? '已购买' : '购买'}</button>
+                <button class="buy-btn" ${owned || state.coins < decor.price ? 'disabled' : ''}>${owned ? '已购买' : '购买'}</button>
             `;
-            if (!owned) {
-                item.querySelector('.buy-btn').addEventListener('click', () => {
-                    this.shopSystem.buyDecor(decor);
-                });
+            if (!owned && this._onBuyDecor) {
+                const captured = decor;
+                item.querySelector('.buy-btn').addEventListener('click', () => this._onBuyDecor(captured));
             }
             this.container.appendChild(item);
         });
     }
 
-    renderFood() {
+    renderFood(state) {
         SHOP_ITEMS.food.forEach(food => {
             const item = document.createElement('div');
             item.className = 'shop-item';
@@ -93,13 +98,12 @@ export class ShopRenderer {
                 <div class="shop-item-name">${food.name}</div>
                 <div class="shop-item-desc">${food.effect}</div>
                 <div class="shop-item-price">💰 ${food.price}</div>
-                <button class="buy-btn" ${this.state.coins < food.price ? 'disabled' : ''}>使用</button>
+                <button class="buy-btn" ${state.coins < food.price ? 'disabled' : ''}>使用</button>
             `;
-            item.querySelector('.buy-btn').addEventListener('click', () => {
-                if (this.shopSystem.requestUseFood(food)) {
-                    this.modal.openSelectCatModal(food);
-                }
-            });
+            if (this._onRequestFood) {
+                const captured = food;
+                item.querySelector('.buy-btn').addEventListener('click', () => this._onRequestFood(captured));
+            }
             this.container.appendChild(item);
         });
     }

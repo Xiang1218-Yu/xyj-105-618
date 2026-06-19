@@ -1,22 +1,22 @@
 import { EVENTS } from '../data/constants.js';
 
 export class ShopSystem {
-    constructor(state, bus) {
-        this.state = state;
+    constructor(store, bus) {
+        this.store = store;
         this.bus = bus;
     }
 
     buyDecor(decor) {
-        if (!this.state.spendCoins(decor.price)) {
+        if (!this.store.spendCoins(decor.price)) {
             this.bus.emit(EVENTS.NOTIFICATION, { message: '金币不足！', type: 'error' });
             return false;
         }
-        this.state.addPurchasedDecor(decor.id);
+        this.store.addPurchasedDecor(decor.id);
 
         const capacityUpgrades = { d1: ['shelf', 2], d2: ['window', 2], d3: ['hall', 2] };
         const upgrade = capacityUpgrades[decor.id];
         if (upgrade) {
-            this.state.upgradeAreaCapacity(upgrade[0], upgrade[1]);
+            this.store.upgradeAreaCapacity(upgrade[0], upgrade[1]);
         }
 
         this.bus.emit(EVENTS.NOTIFICATION, { message: `购买了 ${decor.name}！`, type: 'success' });
@@ -25,11 +25,12 @@ export class ShopSystem {
     }
 
     requestUseFood(food) {
-        if (this.state.cats.length === 0) {
+        const state = this.store.getState();
+        if (state.cats.length === 0) {
             this.bus.emit(EVENTS.NOTIFICATION, { message: '还没有猫咪！', type: 'error' });
             return false;
         }
-        if (this.state.coins < food.price) {
+        if (state.coins < food.price) {
             this.bus.emit(EVENTS.NOTIFICATION, { message: '金币不足！', type: 'error' });
             return false;
         }

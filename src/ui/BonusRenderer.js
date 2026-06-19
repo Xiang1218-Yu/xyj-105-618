@@ -1,25 +1,27 @@
-import { EVENTS, CAT_PERSONALITIES } from '../data/constants.js';
+import { EVENTS } from '../data/constants.js';
+import { calculateCafeBonuses } from '../logic/catUtils.js';
 
 export class BonusRenderer {
-    constructor(state, bus, catManager) {
-        this.state = state;
-        this.bus = bus;
-        this.catManager = catManager;
+    constructor(store, bus, scheduler) {
+        this.store = store;
+        this.scheduler = scheduler;
         this.container = document.getElementById('bonus-grid');
 
-        this.bus.on(EVENTS.AREAS_CHANGED, () => this.render());
-        this.bus.on(EVENTS.CATS_CHANGED, () => this.render());
-        this.bus.on(EVENTS.STATS_CHANGED, () => this.render());
-        this.render();
+        const refresh = () => this.scheduler.invalidate(this);
+        bus.on(EVENTS.AREAS_CHANGED, refresh);
+        bus.on(EVENTS.CATS_CHANGED, refresh);
+        bus.on(EVENTS.STATS_CHANGED, refresh);
+        this.scheduler.invalidate(this);
     }
 
     render() {
-        const bonuses = this.catManager.calculateCafeBonuses();
-        const avgOrder = this.state.totalServed > 0
-            ? Math.round(this.state.totalEarnings / this.state.totalServed)
+        const state = this.store.getState();
+        const bonuses = calculateCafeBonuses(state);
+        const avgOrder = state.totalServed > 0
+            ? Math.round(state.totalEarnings / state.totalServed)
             : 0;
-        const efficiency = (this.state.totalServed + this.state.totalAngryLeft) > 0
-            ? Math.round(this.state.totalServed / (this.state.totalServed + this.state.totalAngryLeft) * 100)
+        const efficiency = (state.totalServed + state.totalAngryLeft) > 0
+            ? Math.round(state.totalServed / (state.totalServed + state.totalAngryLeft) * 100)
             : 0;
 
         const items = [

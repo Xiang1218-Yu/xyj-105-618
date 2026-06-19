@@ -2,10 +2,9 @@ import { EVENTS } from '../data/constants.js';
 
 export class NotificationUI {
     constructor(bus) {
-        this.bus = bus;
         this.el = document.getElementById('notification');
         this._timer = null;
-        this.bus.on(EVENTS.NOTIFICATION, ({ message, type }) => this.show(message, type));
+        bus.on(EVENTS.NOTIFICATION, ({ message, type }) => this.show(message, type));
     }
 
     show(message, type = 'info') {
