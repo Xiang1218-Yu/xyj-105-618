@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>喵星人咖啡屋 - 治愈系猫咪收集游戏</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <header class="game-header">
+            <div class="logo">
+                <span class="logo-icon">🐱</span>
+                <h1>喵星人咖啡屋</h1>
+            </div>
+            <div class="game-stats">
+                <div class="stat-item">
+                    <span class="stat-icon">💰</span>
+                    <span id="coins">500</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-icon">⭐</span>
+                    <span id="reputation">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-icon">🐾</span>
+                    <span id="cat-count">0</span>/35
+                </div>
+            </div>
+        </header>
+
+        <nav class="main-nav">
+            <button class="nav-btn active" data-tab="cafe">☕ 猫咖</button>
+            <button class="nav-btn" data-tab="cats">🐱 猫咪</button>
+            <button class="nav-btn" data-tab="shop">🏪 商店</button>
+            <button class="nav-btn" data-tab="story">📖 故事</button>
+        </nav>
+
+        <main class="game-content">
+            <section id="cafe-tab" class="tab-content active">
+                <div class="cafe-container">
+                    <div class="cafe-left">
+                        <div class="cafe-bonus-panel" id="cafe-bonus-panel">
+                            <h3>🐾 猫咪加成</h3>
+                            <div class="bonus-grid" id="bonus-grid"></div>
+                        </div>
+                        <div class="cafe-areas">
+                            <div class="area" id="hall-area">
+                                <div class="area-header">
+                                    <h3>🏠 大厅</h3>
+                                    <span class="area-info">适合黏人、活泼的猫咪</span>
+                                </div>
+                                <div class="area-cats" id="hall-cats"></div>
+                            </div>
+                            <div class="area" id="shelf-area">
+                                <div class="area-header">
+                                    <h3>🏔️ 猫爬架</h3>
+                                    <span class="area-info">适合高冷、独立的猫咪</span>
+                                </div>
+                                <div class="area-cats" id="shelf-cats"></div>
+                            </div>
+                            <div class="area" id="window-area">
+                                <div class="area-header">
+                                    <h3>🌅 窗边</h3>
+                                    <span class="area-info">适合安静、慵懒的猫咪</span>
+                                </div>
+                                <div class="area-cats" id="window-cats"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="cafe-operations">
+                        <div class="customers-section">
+                            <h3>👥 客人</h3>
+                            <div id="customers-list" class="customers-list"></div>
+                        </div>
+                        <div class="menu-section">
+                            <div class="menu-header">
+                                <h3>📋 菜单</h3>
+                                <button class="develop-toggle-btn" id="develop-toggle-btn">🔬 研发</button>
+                            </div>
+                            <div id="menu-list" class="menu-list"></div>
+                            <div id="develop-panel" class="develop-panel" style="display:none;">
+                                <h4>🔬 研发新菜品</h4>
+                                <div id="develop-list" class="develop-list"></div>
+                            </div>
+                        </div>
+                        <div class="interaction-log" id="interaction-log">
+                            <h4>💬 互动记录</h4>
+                            <div id="log-content" class="log-content"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="cats-tab" class="tab-content">
+                <div class="cats-container">
+                    <div class="cats-header">
+                        <h2>我的猫咪</h2>
+                        <button id="adopt-btn" class="adopt-btn">🐾 收养新猫咪</button>
+                    </div>
+                    <div id="cats-grid" class="cats-grid"></div>
+                </div>
+            </section>
+
+            <section id="shop-tab" class="tab-content">
+                <div class="shop-container">
+                    <h2>🏪 商店</h2>
+                    <div class="shop-tabs">
+                        <button class="shop-tab-btn active" data-shop="cats">猫咪收养</button>
+                        <button class="shop-tab-btn" data-shop="decor">店铺升级</button>
+                        <button class="shop-tab-btn" data-shop="food">零食玩具</button>
+                    </div>
+                    <div id="shop-content" class="shop-content"></div>
+                </div>
+            </section>
+
+            <section id="story-tab" class="tab-content">
+                <div class="story-container">
+                    <h2>📖 猫咪故事</h2>
+                    <p class="story-hint">与猫咪建立深厚羁绊，解锁它们的专属故事</p>
+                    <div id="story-list" class="story-list"></div>
+                </div>
+            </section>
+        </main>
+
+        <div id="modal" class="modal">
+            <div class="modal-content">
+                <span class="close-btn">&times;</span>
+                <div id="modal-body"></div>
+            </div>
+        </div>
+
+        <div id="notification" class="notification"></div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
